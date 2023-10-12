@@ -15,6 +15,7 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         checkCameraPermission()
+        openCamera()
     }
     
     // MARK: - CameraPermission
@@ -64,6 +65,18 @@ class ViewController: UIViewController {
             self.present(alertController, animated: true)
         }
     }
+    
+    func openCamera() {
+        DispatchQueue.main.async {
+            let pickerController = UIImagePickerController()
+            pickerController.sourceType = .camera
+            pickerController.delegate = self
+            self.present(pickerController, animated: true)
+        }
+    }
+}
+
+extension ViewController: UINavigationControllerDelegate ,UIImagePickerControllerDelegate {
     
 }
 
