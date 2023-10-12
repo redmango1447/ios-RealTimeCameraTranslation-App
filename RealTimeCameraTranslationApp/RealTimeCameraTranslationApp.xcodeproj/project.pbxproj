@@ -55,10 +55,8 @@
 			isa = PBXGroup;
 			children = (
 				5D3D78C52AD7B7CE007AD8DD /* App */,
+				5D3D78C62AD80442007AD8DD /* Resource */,
 				5D3D78952AD68AFB007AD8DD /* ViewController.swift */,
-				5D3D789A2AD68AFC007AD8DD /* Assets.xcassets */,
-				5D3D789C2AD68AFC007AD8DD /* LaunchScreen.storyboard */,
-				5D3D789F2AD68AFC007AD8DD /* Info.plist */,
 			);
 			path = RealTimeCameraTranslationApp;
 			sourceTree = "<group>";
@@ -70,6 +68,16 @@
 				5D3D78932AD68AFB007AD8DD /* SceneDelegate.swift */,
 			);
 			name = App;
+			sourceTree = "<group>";
+		};
+		5D3D78C62AD80442007AD8DD /* Resource */ = {
+			isa = PBXGroup;
+			children = (
+				5D3D789A2AD68AFC007AD8DD /* Assets.xcassets */,
+				5D3D789C2AD68AFC007AD8DD /* LaunchScreen.storyboard */,
+				5D3D789F2AD68AFC007AD8DD /* Info.plist */,
+			);
+			name = Resource;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
