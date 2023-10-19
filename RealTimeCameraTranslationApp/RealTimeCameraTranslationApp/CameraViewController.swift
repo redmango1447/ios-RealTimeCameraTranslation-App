@@ -15,7 +15,6 @@ final class CameraViewController: UIViewController {
     
     private let captureSession = AVCaptureSession()
     private let videoDataOutput = AVCaptureVideoDataOutput()
-    private var photoOutput = AVCapturePhotoOutput()
     private var videoPreviewLayer: AVCaptureVideoPreviewLayer!
     private let maskLayer = CAShapeLayer()
     private var request : VNRecognizeTextRequest!
@@ -103,7 +102,6 @@ final class CameraViewController: UIViewController {
 
         do {
             let cameraInput = try AVCaptureDeviceInput(device: captureDevice)
-            photoOutput = AVCapturePhotoOutput()
             
             if captureDevice.supportsSessionPreset(.hd4K3840x2160) {
                 captureSession.sessionPreset = .hd4K3840x2160
@@ -158,6 +156,8 @@ final class CameraViewController: UIViewController {
 
             text.append(candidate.string)
         }
+        
+        print(text)
     }
     
     var boxLayer = [CAShapeLayer]()
@@ -179,7 +179,7 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             request.usesLanguageCorrection = false
             
             let requestHandler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer,
-                                                       orientation: CGImagePropertyOrientation.up,
+                                                       orientation: CGImagePropertyOrientation.right,
                                                        options: [:])
             do {
                 try requestHandler.perform([request])
