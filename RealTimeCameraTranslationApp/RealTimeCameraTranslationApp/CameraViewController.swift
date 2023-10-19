@@ -7,13 +7,20 @@
 
 import UIKit
 import AVFoundation
+import Vision
 
-class CameraViewController: UIViewController {
+final class CameraViewController: UIViewController {
     
-    let previewView = UIView()
-    var captureSession: AVCaptureSession!
-    var photoOutput: AVCapturePhotoOutput!
-    var videoPreviewLayer: AVCaptureVideoPreviewLayer!
+    private let previewView = UIView()
+    
+    private let captureSession = AVCaptureSession()
+    private let videoDataOutput = AVCaptureVideoDataOutput()
+    private var photoOutput = AVCapturePhotoOutput()
+    private var videoPreviewLayer: AVCaptureVideoPreviewLayer!
+    private let maskLayer = CAShapeLayer()
+    private var request : VNRecognizeTextRequest!
+    
+    let captureSessionQueue = DispatchQueue(label: "RealTimeCamera")
     
     // MARK: - LifeCycle
     
@@ -21,12 +28,14 @@ class CameraViewController: UIViewController {
         super.viewDidLoad()
         checkCameraPermission()
         constraintPreviewView()
+        setupLivePreview()
         configureCamera()
+        request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
     }
     
     // MARK: - CameraPermission
     
-    func checkCameraPermission(){
+    private func checkCameraPermission(){
         AVCaptureDevice.requestAccess(for: .video) { [weak self] isAuthorized in
             if isAuthorized {
                 print("Camera: 권한 허용")
@@ -37,7 +46,7 @@ class CameraViewController: UIViewController {
         }
     }
     
-    func showAlertGoToSetting() {
+    private func showAlertGoToSetting() {
         let alertController = UIAlertController(
             title: "현재 카메라 사용에 대한 접근 권한이 없습니다.",
             message: "설정 > RealTimeCameraTranslationApp 탭에서 접근을 활성화 할 수 있습니다.",
@@ -71,8 +80,8 @@ class CameraViewController: UIViewController {
             self.present(alertController, animated: true)
         }
     }
-    
-    func constraintPreviewView() {
+    // MARK: - UI & Constranint
+    private func constraintPreviewView() {
         view.addSubview(previewView)
         
         previewView.translatesAutoresizingMaskIntoConstraints = false
@@ -85,33 +94,40 @@ class CameraViewController: UIViewController {
         ])
     }
     
-    func configureCamera() {
-        captureSession = AVCaptureSession()
+    // MARK: - Method
+    
+    private func configureCamera() {
         captureSession.beginConfiguration()
 
         guard let captureDevice = AVCaptureDevice.default(for: AVMediaType.video) else { return }
 
         do {
             let cameraInput = try AVCaptureDeviceInput(device: captureDevice)
-
             photoOutput = AVCapturePhotoOutput()
+            
+            if captureDevice.supportsSessionPreset(.hd4K3840x2160) {
+                captureSession.sessionPreset = .hd4K3840x2160
+            } else {
+                captureSession.sessionPreset = .hd1920x1080
+            }
 
-            captureSession.addInput(cameraInput)
-            captureSession.sessionPreset = .photo
-            captureSession.addOutput(photoOutput)
+            if captureSession.canAddInput(cameraInput) {
+                captureSession.addInput(cameraInput)
+            }
+            
+            videoDataOutput.alwaysDiscardsLateVideoFrames = true
+            videoDataOutput.setSampleBufferDelegate(self, queue: captureSessionQueue)
+            videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
+            
+            if captureSession.canAddOutput(videoDataOutput) {
+                captureSession.addOutput(videoDataOutput)
+                videoDataOutput.connection(with: .video)?.preferredVideoStabilizationMode = .off
+            }
+            
             captureSession.commitConfiguration()
-            setupLivePreview()
         } catch {
             print(error)
         }
-    }
-    
-    func setupLivePreview() {
-        videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-        
-        videoPreviewLayer.videoGravity = .resizeAspectFill
-        videoPreviewLayer.connection?.videoOrientation = .portrait // 이제 안씀 수정해야함
-        previewView.layer.addSublayer(videoPreviewLayer)
         
         DispatchQueue.global(qos: .userInitiated).async {
             self.captureSession.startRunning()
@@ -120,7 +136,56 @@ class CameraViewController: UIViewController {
                 self.videoPreviewLayer.frame = self.previewView.bounds
             }
         }
+    }
+    
+    private func setupLivePreview() {
+        videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+        videoPreviewLayer.videoGravity = .resizeAspectFill
+        previewView.layer.addSublayer(videoPreviewLayer)
+    }
+    
+    private func recognizeTextHandler(request: VNRequest, error: Error?) {
+        var text = [String]()
         
+        guard let results = request.results as? [VNRecognizedTextObservation] else {
+            return
+        }
+        
+        let maximumCandidates = 1
+        
+        for visionResult in results {
+            guard let candidate = visionResult.topCandidates(maximumCandidates).first else { continue }
+
+            text.append(candidate.string)
+        }
+    }
+    
+    var boxLayer = [CAShapeLayer]()
+    func draw(rect: CGRect, color: CGColor) {
+        let layer = CAShapeLayer()
+        layer.opacity = 0.5
+        layer.borderColor = color
+        layer.borderWidth = 1
+        layer.frame = rect
+        boxLayer.append(layer)
     }
 }
 
+extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            request.recognitionLevel = .fast
+            request.usesLanguageCorrection = false
+            
+            let requestHandler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer,
+                                                       orientation: CGImagePropertyOrientation.up,
+                                                       options: [:])
+            do {
+                try requestHandler.perform([request])
+            } catch {
+                print(error)
+            }
+        }
+    }
+}

@@ -56,7 +56,8 @@
 			children = (
 				5D3D78C52AD7B7CE007AD8DD /* App */,
 				5D3D78C62AD80442007AD8DD /* Resource */,
-				5D3D78952AD68AFB007AD8DD /* CameraViewController.swift */,
+				5D3D78C72AD92E83007AD8DD /* Model */,
+				5D3D78CA2ADE5C8F007AD8DD /* ViewController */,
 			);
 			path = RealTimeCameraTranslationApp;
 			sourceTree = "<group>";
@@ -78,6 +79,21 @@
 				5D3D789F2AD68AFC007AD8DD /* Info.plist */,
 			);
 			name = Resource;
+			sourceTree = "<group>";
+		};
+		5D3D78C72AD92E83007AD8DD /* Model */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Model;
+			sourceTree = "<group>";
+		};
+		5D3D78CA2ADE5C8F007AD8DD /* ViewController */ = {
+			isa = PBXGroup;
+			children = (
+				5D3D78952AD68AFB007AD8DD /* CameraViewController.swift */,
+			);
+			name = ViewController;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
